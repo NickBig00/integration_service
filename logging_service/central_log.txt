@@ -1,0 +1,1 @@
+[2025-11-08 12:59:07.012886] {"service": "inventory", "event": "ReservedItems", "orderId": "ORD-2025-11-04-1753", "message": "Reserved 2 units successfully"}
