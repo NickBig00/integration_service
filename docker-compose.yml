@@ -25,6 +25,7 @@ services:
   inventory-service:
     build: ./inventory_service
     container_name: inventory-service
+    restart: always
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -32,3 +33,11 @@ services:
         condition: service_started
     ports:
       - "50051:50051"
+
+  oms-service:
+    build: ./oms
+    container_name: oms-service
+    ports:
+      - "8000:8000"
+    depends_on:
+      - inventory-service
