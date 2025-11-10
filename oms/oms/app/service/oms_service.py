@@ -5,6 +5,9 @@ from oms.app.clients import inventory_client as inventory
 from oms.app.clients import payment_client as payment
 from oms.app.schema.schema import createOrder, Order
 
+from oms.app.exceptions.exceptions import PaymentDeclinedError, ReserveError, InventoryUnavailableError, \
+    CustomerNotFoundError
+
 _STORE: dict[str, Order] = {}
 order_items = {"P-3344": 1, "P-8821": 2}
 
@@ -37,19 +40,15 @@ async def create_order(payload: createOrder, correlation_id: Optional[str] = Non
     #
     print("Checking availability")
     if not all(availability.values()):
-        order = Order(**payload.model_dump(), status="CANCELLED")
-        _STORE[payload.orderId] = order
         print("Not every item available")
-        return order
+        raise InventoryUnavailableError(f"Availability check for order {payload.orderId} failed.")
 
     print("Items available. Starting reservation...")
     # 4) INVENTORY: reservieren
     reserved_ok, _results = inventory.reserve_items(items_map)
     if not reserved_ok:
         print("Couldn't reserve")
-        order = Order(**payload.model_dump(), status="CANCELLED")
-        _STORE[payload.orderId] = order
-        return order
+        raise ReserveError(f"Reservation for order {payload.orderId} failed")
 
     print("Starting payment")
 
@@ -62,14 +61,16 @@ async def create_order(payload: createOrder, correlation_id: Optional[str] = Non
         correlation_id=correlation_id,
     )
 
-    print(f"Crreated payment: {pay}")
+    print(f"Created payment: {pay}")
     print(f"Status of pay: {pay.get('status')} ")
 
-    # Kollegen-Service liefert z. B. status "AUTHORIZED"/"CAPTURED" oder "FAILED"
-    if pay.get("status") not in {"AUTHORIZED", "CAPTURED"}:
-        order = Order(**payload.model_dump(), status="CANCELLED")
-        _STORE[payload.orderId] = order
-        return order
+    if pay.get("status") == "DECLINED":
+        inventory.release_items(items_map)
+        raise PaymentDeclinedError(f"Payment for customer with id {payload.customer.customerId} was declined.")
+
+    if pay.get("status") == "NOTFOUND":
+        inventory.release_items(items_map)
+        raise CustomerNotFoundError(f"Customer with id {payload.customer.customerId} was not found.")
 
     # 6) Erfolg: Order abschließen
     order = Order(**payload.model_dump(), status="PROCESSED")
