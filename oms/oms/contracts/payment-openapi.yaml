@@ -1,32 +1,79 @@
-opneapi: 3.1.0
-info: { title: Payment Service, version: 1.0.0, description: Payment Service API for processing payments }
-servers: [{ url: http://payment:8000/api/v1 }]
+openapi: 3.1.0
+info:
+  title: Payment Service API
+  version: 1.0.0
+  description: REST API des Payment-Service zur Zahlungsabwicklung.
+
+servers:
+  - url: http://localhost:8002/api/v1
+    description: Lokale Entwicklung
+
 paths:
   /payments:
     post:
-      summary : Process a payment
+      summary: Zahlung durchführen
+      operationId: createPayment
       requestBody:
         required: true
         content:
           application/json:
-            type: object
-            required: [orderId, amount, currency, paymentMethod]
-            properties:
-              orderId: { type: sting }
-              amount: { type: number, minimum: 0 }
-              currency: { type: string, enum: [USD, EUR, GBP] }
-              paymentMethod: { type: string, enum: [CARD, PAYPAL, INVOICE] }
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
       responses:
         '201':
-          description: Payment processed successfully
+          description: Zahlung erfolgreich autorisiert oder erfasst.
           content:
             application/json:
-              type: object
-              required: [id, status]
-              properties:
-                id: { type: string }
-                status: { type: string, enum: [SUCCESS, FAILED, PENDING, CANCELLED] }
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
         '400':
-          description: Invalid input
-        '502':
-          description: Payment gateway error
+          description: Ungültige Eingabedaten.
+        '402':
+          description: Zahlung abgelehnt (nicht genug Guthaben, Kreditkarte abgelehnt).
+        '500':
+          description: Interner Fehler im Payment-Service.
+        '504':
+          description: Timeout beim externen Zahlungsanbieter.
+
+components:
+  schemas:
+    PaymentRequest:
+      type: object
+      required: [orderId, amount, currency, method]
+      properties:
+        orderId:
+          type: string
+          example: ORD-2025-10-16-7891
+        amount:
+          type: number
+          format: float
+          example: 209.97
+        currency:
+          type: string
+          example: EUR
+        method:
+          type: string
+          enum: [CARD, PAYPAL, TRANSFER]
+          example: CARD
+
+    PaymentResponse:
+      type: object
+      required: [id, orderId, status]
+      properties:
+        id:
+          type: string
+          example: PAY-87342
+        orderId:
+          type: string
+          example: ORD-2025-10-16-7891
+        status:
+          type: string
+          enum: [AUTHORIZED, CAPTURED, FAILED, CANCELLED]
+          example: AUTHORIZED
+        authorizedAt:
+          type: string
+          format: date-time
+          example: 2025-10-16T14:23:00Z
+        message:
+          type: string
+          example: Payment authorized successfully
