@@ -42,6 +42,13 @@ services:
         - rabbitmq
       environment:
         - PYTHONUNBUFFERED=1
+  wms-service:
+    build: wms_service
+    container_name: wms_service
+    depends_on:
+      - rabbitmq
+    environment:
+      - PYTHONUNBUFFERED=1
   oms-service:
     build: ./oms
     container_name: oms-service
@@ -49,3 +56,4 @@ services:
       - "8000:8000"
     depends_on:
       - inventory-service
+      - rabbitmq
