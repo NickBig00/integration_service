@@ -11,8 +11,8 @@ def send_log_message(service: str, event: str, message: str):
     Send log messages to RabbitMQ for centralized logging.
     
     Args:
-        service: The name of the service sending the log message (e.g., "inventory")
-        event: The event type or action being logged (e.g., "CheckAvailability", "ReserveItems")
+        service: The name of the service sending the log message (e.g., "wms")
+        event: The event type or action being logged (e.g., "order_received", "items_picked")
         message: The detailed log message describing what happened
     """
     try:
