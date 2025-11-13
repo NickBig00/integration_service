@@ -4,9 +4,9 @@ import time
 
 import pika
 from fastapi import FastAPI
-from .rabbitmq.receive import start_wms_listener
-from .routers.orders import router as orders
 from oms.app.service.oms_service import write_in_store
+
+from .routers.orders import router as orders
 
 app = FastAPI(title="OMS API", version="1.0.0")
 app.include_router(orders, tags=["Orders"])
@@ -44,9 +44,9 @@ def start_wms_listener_blocking():
                     body: The message body containing JSON-encoded order event data
                 """
                 print("[OMS] Nachricht empfangen:", body.decode())
-                data = json.loads(body)
-                order_id = data.get("orderId")
-                event = data.get("event")
+                data: dict = json.loads(body)
+                order_id: str = data.get("orderId")
+                event: str = data.get("event")
                 write_in_store(order_id, event)
 
             channel.basic_consume(queue="oms_queue", on_message_callback=callback, auto_ack=True)
@@ -55,6 +55,7 @@ def start_wms_listener_blocking():
         except Exception as e:
             print("[OMS] Fehler:", e)
             time.sleep(5)
+
 
 @app.on_event("startup")
 def startup_event():
