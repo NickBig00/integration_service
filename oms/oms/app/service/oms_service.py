@@ -24,6 +24,8 @@ def write_in_store(order_id, status):
         KeyError: If the order_id does not exist in the store
     """
     _STORE[order_id].status = status
+    send_log_message("oms", f"UpdateStatus",
+                     f"{order_id}: Updated order status to {status}")
 
 
 def list_orders() -> list[Order]:
@@ -103,11 +105,15 @@ async def create_order(payload: createOrder, correlation_id: Optional[str] = Non
                          f"{order_id}: Total amount does not match the sum of item prices")
         raise ValueError("Total amount does not match sum of item prices")
 
+    send_log_message("oms", f"CreateOrder",
+                     f"{order_id}: Checking availability for all items of order")
     # 3) INVENTORY: Verfügbarkeit prüfen
     items_map = {i.productId: i.quantity for i in payload.items}
     availability = inventory.check_availability(items_map)
 
     not_available = {pid: items_map[pid] for pid, is_available in availability.items() if not is_available}
+    send_log_message("oms", f"CreateOrder",
+                     f"{order_id}: {len(not_available.values())} items not available")
 
     print("Checking availability")
     if not_available:
@@ -119,6 +125,8 @@ async def create_order(payload: createOrder, correlation_id: Optional[str] = Non
         send_log_message("oms", f"CreateOrder", f"{order_id}: Restocked for items {restocks.keys()}")
 
     print("Items available. Starting reservation...")
+    send_log_message("oms", f"CreateOrder", f"{order_id}: every item available. Trying to reserve")
+
     # 4) INVENTORY: reservieren
     reserved_ok, _results = inventory.reserve_items(items_map)
     if not reserved_ok:
