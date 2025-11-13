@@ -39,7 +39,7 @@ components:
   schemas:
     PaymentRequest:
       type: object
-      required: [orderId, amount, currency, method]
+      required: [orderId, customer_id, amount, method]
       properties:
         orderId:
           type: string
@@ -48,9 +48,9 @@ components:
           type: number
           format: float
           example: 209.97
-        currency:
+        customer_id:
           type: string
-          example: EUR
+          example: CUST-22222
         method:
           type: string
           enum: [CARD, PAYPAL, TRANSFER]
