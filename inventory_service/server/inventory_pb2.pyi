@@ -95,3 +95,41 @@ class ReleaseResponse(_message.Message):
     overallSuccess: bool
     messages: _containers.ScalarMap[str, str]
     def __init__(self, overallSuccess: bool = ..., messages: _Optional[_Mapping[str, str]] = ...) -> None: ...
+
+class RestockRequest(_message.Message):
+    __slots__ = ("items",)
+    class ItemsEntry(_message.Message):
+        __slots__ = ("key", "value")
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: int
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[int] = ...) -> None: ...
+    ITEMS_FIELD_NUMBER: _ClassVar[int]
+    items: _containers.ScalarMap[str, int]
+    def __init__(self, items: _Optional[_Mapping[str, int]] = ...) -> None: ...
+
+class RestockResponse(_message.Message):
+    __slots__ = ("overallSuccess", "results")
+    class ResultsEntry(_message.Message):
+        __slots__ = ("key", "value")
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: RestockStatus
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[_Union[RestockStatus, _Mapping]] = ...) -> None: ...
+    OVERALLSUCCESS_FIELD_NUMBER: _ClassVar[int]
+    RESULTS_FIELD_NUMBER: _ClassVar[int]
+    overallSuccess: bool
+    results: _containers.MessageMap[str, RestockStatus]
+    def __init__(self, overallSuccess: bool = ..., results: _Optional[_Mapping[str, RestockStatus]] = ...) -> None: ...
+
+class RestockStatus(_message.Message):
+    __slots__ = ("success", "message", "added")
+    SUCCESS_FIELD_NUMBER: _ClassVar[int]
+    MESSAGE_FIELD_NUMBER: _ClassVar[int]
+    ADDED_FIELD_NUMBER: _ClassVar[int]
+    success: bool
+    message: str
+    added: int
+    def __init__(self, success: bool = ..., message: _Optional[str] = ..., added: _Optional[int] = ...) -> None: ...
