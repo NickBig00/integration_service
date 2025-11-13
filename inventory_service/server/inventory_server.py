@@ -15,6 +15,7 @@ from . import inventory_pb2_grpc
 logger = logging.getLogger()
 
 INVENTORY_DATA: dict = json.load(open("data/mock_data_inventory.json"))
+ALLOW_RESTOCK = {"P-8826"}
 
 
 class InventoryServiceServicer(inventory_pb2_grpc.InventoryServiceServicer):
@@ -120,6 +121,36 @@ class InventoryServiceServicer(inventory_pb2_grpc.InventoryServiceServicer):
             overallSuccess=overall_success,
             messages=released_items
         )
+
+    def RestockItems(self, request, context):
+        """
+        Restock nur, wenn Lagerbestand==0 und Produkt erlaubt.
+        """
+        results = {}
+        overall = True
+        send_log_message("inventory", "RestockItems",
+                         f"Restocking  items...")
+        for pid, qty in request.items.items():
+            current = INVENTORY_DATA.get(pid, 0)
+
+            if pid not in ALLOW_RESTOCK:
+                send_log_message("inventory", "RestockItems",
+                                 f"Cant restock {pid}")
+                results[pid] = inventory_pb2.RestockStatus(
+                    success=False, message="Restock not allowed", added=0
+                )
+                overall = False
+                continue
+
+            added = qty  # bei qty==0 mindestens 1
+            INVENTORY_DATA[pid] = current + added
+            send_log_message("inventory", "RestockItems",
+                             f"Restocked {added} to {pid}")
+            results[pid] = inventory_pb2.RestockStatus(
+                success=True, message=f"Restocked {added}", added=added
+            )
+
+        return inventory_pb2.RestockResponse(overallSuccess=overall, results=results)
 
 
 def serve():
