@@ -9,7 +9,7 @@ from .routers.orders import router as orders
 from oms.app.service.oms_service import write_in_store
 
 app = FastAPI(title="OMS API", version="1.0.0")
-app.include_router(orders, prefix="/orders", tags=["Orders"])
+app.include_router(orders, tags=["Orders"])
 
 
 def start_wms_listener_blocking():
