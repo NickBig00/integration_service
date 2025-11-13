@@ -3,31 +3,33 @@ from typing import Optional
 
 from oms.app.clients import inventory_client as inventory
 from oms.app.clients import payment_client as payment
-from oms.app.schema.schema import createOrder, Order
-from oms.app.rabbitmq.message_sender import send_log_message, send_wms_message
 from oms.app.exceptions.exceptions import PaymentDeclinedError, ReserveError, InventoryUnavailableError, \
     CustomerNotFoundError
+from oms.app.rabbitmq.message_sender import send_log_message, send_wms_message
+from oms.app.schema.schema import createOrder, Order
 
 _STORE: dict[str, Order] = {}
 order_items = {"P-3344": 1, "P-8821": 2}
 
+
 def write_in_store(order_id, status):
     """
     Update the status of an existing order in the in-memory store.
-    
+
     Args:
         order_id: The unique identifier of the order to update
         status: The new status to assign to the order
-    
+
     Raises:
         KeyError: If the order_id does not exist in the store
     """
     _STORE[order_id].status = status
 
+
 def list_orders() -> list[Order]:
     """
     Retrieve all orders from the in-memory store.
-    
+
     Returns:
         list[Order]: A list containing all orders currently stored in the system
     """
@@ -37,10 +39,10 @@ def list_orders() -> list[Order]:
 def get_order(orderId: str) -> Order | None:
     """
     Retrieve a specific order by its ID from the in-memory store.
-    
+
     Args:
         orderId: The unique identifier of the order to retrieve
-    
+
     Returns:
         Order | None: The order object if found, None otherwise
     """
@@ -50,7 +52,7 @@ def get_order(orderId: str) -> Order | None:
 class DuplicateOrderError(Exception):
     """
     Exception raised when attempting to create an order with an ID that already exists.
-    
+
     This exception is used to enforce idempotency in order creation.
     """
     pass
@@ -59,7 +61,7 @@ class DuplicateOrderError(Exception):
 async def create_order(payload: createOrder, correlation_id: Optional[str] = None) -> Order:
     """
     Create a new order with full validation and processing workflow.
-    
+
     This method orchestrates the complete order creation process:
     1. Checks for duplicate order IDs (idempotency)
     2. Validates that the total amount matches the sum of item prices
@@ -68,14 +70,14 @@ async def create_order(payload: createOrder, correlation_id: Optional[str] = Non
     5. Authorizes payment with the payment service
     6. Creates and stores the order if all steps succeed
     7. Sends order information to WMS for fulfillment
-    
+
     Args:
         payload: The order creation request containing all order details
         correlation_id: Optional correlation ID for distributed tracing across services
-    
+
     Returns:
         Order: The created order object with status "PROCESSED"
-    
+
     Raises:
         DuplicateOrderError: If an order with the same ID already exists
         ValueError: If the total amount doesn't match the sum of item prices
@@ -104,11 +106,17 @@ async def create_order(payload: createOrder, correlation_id: Optional[str] = Non
     # 3) INVENTORY: Verfügbarkeit prüfen
     items_map = {i.productId: i.quantity for i in payload.items}
     availability = inventory.check_availability(items_map)
-  
+
+    not_available = {pid: items_map[pid] for pid, is_available in availability.items() if not is_available}
+
     print("Checking availability")
-    if not all(availability.values()): 
-        send_log_message("oms", f"CreateOrder", f"{order_id}: Not every item available")
-        raise InventoryUnavailableError(f"Availability check for order {payload.orderId} failed.")
+    if not_available:
+        print("Not every item available... Starting restock")
+        send_log_message("oms", f"CreateOrder", f"{order_id}: Not every item available. Trying to restock")
+        restock_ok, restocks = inventory.restock_items(not_available)
+        if not restock_ok:
+            raise InventoryUnavailableError(f"Availability check and Restock for order {payload.orderId} failed.")
+        send_log_message("oms", f"CreateOrder", f"{order_id}: Restocked for items {restocks.keys()}")
 
     print("Items available. Starting reservation...")
     # 4) INVENTORY: reservieren
