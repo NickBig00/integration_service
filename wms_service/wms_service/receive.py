@@ -63,14 +63,12 @@ def connect_to_rabbitmq(max_retries=10, delay=5):
     for attempt in range(1, max_retries + 1):
         try:
             print(f"Verbindungsversuch {attempt}/{max_retries} zu RabbitMQ...")
-            send_log_message("wms", "connection_attempt", f"Attempt {attempt} to connect to RabbitMQ")
             connection = pika.BlockingConnection(pika.ConnectionParameters(host="rabbitmq"))
             print("Verbindung zu RabbitMQ erfolgreich!")
             send_log_message("wms", "connection_success", "Successfully connected to RabbitMQ")
             return connection
         except pika.exceptions.AMQPConnectionError:
             print(f"RabbitMQ noch nicht erreichbar, warte {delay} Sekunden...")
-            send_log_message("wms", "connection_failed", f"Attempt {attempt} failed to connect to RabbitMQ")
             time.sleep(delay)
     print("Konnte keine Verbindung zu RabbitMQ herstellen. Beende Service.")
     send_log_message("wms", "connection_failed_final", "Failed to connect to RabbitMQ after multiple attempts")
