@@ -1,5 +1,4 @@
 import json
-import os
 import logging
 import pika
 
@@ -9,10 +8,10 @@ logger = logging.getLogger()
 def send_log_message(service: str, event: str, message: str):
     """
     Send log messages to RabbitMQ for centralized logging.
-    
+
     Args:
-        service: The name of the service sending the log message (e.g., "wms")
-        event: The event type or action being logged (e.g., "order_received", "items_picked")
+        service: The name of the service sending the log message (e.g., "inventory")
+        event: The event type or action being logged (e.g., "CheckAvailability", "ReserveItems")
         message: The detailed log message describing what happened
     """
     try:
@@ -35,5 +34,5 @@ def send_log_message(service: str, event: str, message: str):
         logging.info(f" Sent log message: {payload}")
         connection.close()
 
-    except Exception as e:
-        logging.error(f"Failed to send log message: {e}")
+    except pika.exceptions.AMQPConnectionError:
+        logging.error(f"Failed to send log message")
