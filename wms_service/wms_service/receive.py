@@ -32,13 +32,13 @@ def callback(ch, method, properties, body):
     send_log_message("wms", "order_received", f"Received order: {data.get('order')}")
     order_id = json.loads(data.get("order")).get("orderId")
     print("order id :" + order_id)
-    publish_message(order_id, "items_picked", f"{order_id}: Picked the ordered items")
+    publish_message(order_id, "ITEMSPICKED", f"{order_id}: Picked the ordered items")
     send_log_message("wms", "items_picked", f"Picked items for order {order_id}")
     time.sleep(5)
-    publish_message(order_id, "order_packed", f"{order_id}: Packed the complete order. Ready for shipping")
+    publish_message(order_id, "ORDERPACKED", f"{order_id}: Packed the complete order. Ready for shipping")
     send_log_message("wms", "order_packed", f"Packed order {order_id}")
     time.sleep(5)
-    publish_message(order_id, "order_shipped", f"{order_id}: Order was shipped.")
+    publish_message(order_id, "ORDERSHIPPED", f"{order_id}: Order was shipped.")
     send_log_message("wms", "order_shipped", f"Shipped order {order_id}")
 
 

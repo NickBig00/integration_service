@@ -17,9 +17,9 @@ def publish_message(order_id: str, event: str, message: str):
         message: A descriptive message about the event
     """
 
-    event_to_routing_key = {"items_picked": "item.picked",
-                            "order_packed": "order.packed",
-                            "order_shipped": "order.shipped"}
+    event_to_routing_key = {"ITEMSPICKED": "item.picked",
+                            "ORDERPACKED": "order.packed",
+                            "ORDERSHIPPED": "order.shipped"}
 
     try:
         connection = pika.BlockingConnection(pika.ConnectionParameters(host="rabbitmq"))
