@@ -107,11 +107,11 @@ class InventoryServiceServicer(inventory_pb2_grpc.InventoryServiceServicer):
             ReleaseResponse: A response containing overall success status and
                 messages for each released item
         """
-        released_items = {}
-        overall_success = True
+        released_items: dict = {}
+        overall_success: bool = True
 
         for product_id, quantity in request.items.items():
-            available_quantity = INVENTORY_DATA.get(product_id, 0)
+            available_quantity: int = INVENTORY_DATA.get(product_id, 0)
             INVENTORY_DATA[product_id] = available_quantity + quantity
             released_items[product_id] = f"Released {quantity} units"
             send_log_message("inventory", "ReleaseItems",
@@ -126,12 +126,12 @@ class InventoryServiceServicer(inventory_pb2_grpc.InventoryServiceServicer):
         """
         Restock nur, wenn Lagerbestand==0 und Produkt erlaubt.
         """
-        results = {}
-        overall = True
+        results: dict = {}
+        overall: bool = True
         send_log_message("inventory", "RestockItems",
                          f"Restocking  items...")
         for pid, qty in request.items.items():
-            current = INVENTORY_DATA.get(pid, 0)
+            current: int = INVENTORY_DATA.get(pid, 0)
 
             if pid not in ALLOW_RESTOCK:
                 send_log_message("inventory", "RestockItems",
